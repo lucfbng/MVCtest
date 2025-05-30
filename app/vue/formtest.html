@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="../api/Auth.js" defer></script>
+    <script type="module" src="../api/Auth.js" defer></script>
     <title>Document</title>
   </head>
   <body>
     <form method="post" id="registerForm">
-      <input type="text" id="firstname" name="firstname" required />
-      <input type="text" id="lastname" name="lastname" required />
-      <input type="email" id="email" name="email" required />
-      <input type="password" id="password" name="password" required />
-      <input type="password" id="confirmPassword" name="confirmPassword" required />
+      <input type="text" id="firstname" name="firstname"/>
+      <input type="text" id="lastname" name="lastname"/>
+      <input type="email" id="email" name="email"/>
+      <input type="password" id="password" name="password"/>
+      <input type="password" id="confirmPassword" name="confirmPassword"/>
       <input type="submit" id="register" name="register" value="OK" />
     </form>
   </body>
