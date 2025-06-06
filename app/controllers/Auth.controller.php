@@ -1,11 +1,16 @@
 <?php
 require_once "../services/Auth.service.php";
-require_once "../services/Sign.service.php";
-require_once "../services/Session.service.php";
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
 
 class AuthController {
+
+    private $authService;
+
+    public function __construct() {
+        $this->authService = new AuthService();
+    }
+
     public function registerForm() {
         try {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -14,12 +19,14 @@ class AuthController {
                     'lastname' => $_POST['lastname'],
                     'email' => $_POST['email'],
                     'password' => $_POST['password'],
-                    'confirmPassword' => $_POST['confirmPassword']
+                    'confirmPassword' => $_POST['confirmPassword'],
+                    'userStatus' => 'Offline',
+                    'userRole' => 'Associé'
                 ];
-                $signService = new SignService();
-                $cleanData = $signService->cleaningData($formData, $type = 'register');
 
-                if ($cleanData) {
+                $result = $this->authService->register($formData);
+                
+                if ($result) {
                     echo json_encode([
                         'success' => true,
                         'message' => 'Inscription réussie',
@@ -44,19 +51,12 @@ class AuthController {
                     'password' => $_POST['password']
                 ];
     
-                $signService = new SignService();
-                $cleanData = $signService->cleaningData($formData, $type = 'login');
-    
-                if ($cleanData) {
-                    $sessionService = new SessionService();
-                    $sessionService->startUserSession($formData);
-                }
-                if ($sessionService) {
-                    echo json_encode([
-                        'success' => true,
-                        'message' => 'Connexion réussie',
-                    ]);
-                }
+                $this->authService->authenticate($formData['email'], $formData['password']);
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Connexion réussie',
+                ]);
             }
         } catch (Exception $e) {
             echo json_encode([
@@ -70,22 +70,16 @@ class AuthController {
     public function logoutForm() {
         try {
             // Démarrer la session si elle n'est pas déjà active
-            $sessionService = new SessionService();
-            $sessionState = $sessionService->destroySession();
-            if ($sessionState) {
-                echo json_encode([
+            $result = $this->authService->logout();
+            if ($result) {
+                    echo json_encode([
                     'success' => true,
                     'message' => 'Déconnexion réussie',
-                ]);
-            } else if (!$sessionState) {
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Aucune session active',
                 ]);
             } else {
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Le serveur a rencontré un problème',
+                    'message' => 'Erreur lors de la déconnexion',
                 ]);
             }
         } catch (Exception $e) {

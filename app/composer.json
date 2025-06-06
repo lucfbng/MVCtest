@@ -1,0 +1,12 @@
+{
+    "name": "luc/app",
+    "authors": [
+        {
+            "name": "Luc",
+            "email": "lucfbng@protonmail.com"
+        }
+    ],
+    "require": {
+        "cboden/ratchet": "^0.4.4"
+    }
+}

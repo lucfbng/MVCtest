@@ -1,6 +1,6 @@
 <?php
 
-require_once "../config/database.php";
+require_once "../config/Database.config.php";
 
 class User {
     //DB
@@ -175,8 +175,21 @@ class User {
             ]);
         }
     }
-
-
+    public function updateUserStatus($email, $status) {
+        try {
+            $stmt = $this->db->prepare(
+                "UPDATE user_table
+                SET user_status = :status
+                WHERE user_email = :email"
+            );
+            $stmt->bindParam(':email', $email);
+            $stmt->bindParam(':status', $status);
+            $stmt->execute();
+            return true;
+        } catch (PDOException $e) {
+            throw new Exception("Erreur dans updateUserStatus : " . $e->getMessage());
+        }
+    }
     public function userStatusHandler($email, $status) {
         $status === "connect" ? $updateStatus = "En ligne" : "Hors-ligne";
         try {
