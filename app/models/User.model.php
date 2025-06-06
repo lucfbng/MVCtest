@@ -45,7 +45,7 @@ class User {
 
     // Méthodes
     // CRUD
-    public function createUser($userData) {
+    public function userRegister($userData) {
         $this->setUserData($userData);
         // Requête préparée qui créer un utilisateur en base de donnée
         try {
@@ -84,41 +84,31 @@ class User {
         } // Échec de l'insertion
     }
 
-    public function checkLoginData($userData) {
+    public function userLogin($userData) {
         $this->setUserData($userData);
         try {
-            $stmt = $this->db->prepare("
-                SELECT user_email, user_password
+            $stmt = $this->db->prepare(
+                "SELECT user_email, user_password
                 FROM user_table
-                WHERE user_email = :email
-            ");
+                WHERE user_email = :email"
+            );
             $stmt->bindParam(':email', $this->email);
             $stmt->execute();
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             if(!$user) {
-                return json_encode([
-                    'success' => false,
-                    'message' => 'Email ou mot de passe incorrecte'
-                ]);
+                throw new Exception("Email ou mot de passe incorrecte");
+
             }
             if(password_verify($this->password, $user['user_password'])) {
                 $this->password = null;
-                return json_encode([
-                    'success' => true,
-                    'message' => 'Authentification réussie !'
-                ]);
+                return true;
+
             } else {
-                return json_encode([
-                    'success' => false,
-                    'message' => 'Email ou mot de passe incorrect'
-                ]);
+                throw new Exception("Email ou mot de passe incorrect");
+
             };
         } catch (PDOException $e) {
-            return json_encode([
-                'success' => false,
-                'message' => 'Erreur lors de la vérification de l\'email',
-                'errors' => $e->getMessage()
-            ]);
+            throw new Exception("Erreur lors de la vérification de l'email : " . $e->getMessage());
         }
     }
     
@@ -126,25 +116,22 @@ class User {
         $this->setUserData($userData);
         // Requête pour modifier un utilisateur
         try {
-            $stmt = $this->db->prepare("
-                UPDATE user_table 
+            $stmt = $this->db->prepare(
+                "UPDATE user_table 
                 SET firstname = :fistname, lastname = :lastname, email = :email,
                 userStatus = :userStatus, userRole = :userRole
-                WHERE id_user = :id 
-            ");
+                WHERE id_user = :id"
+            );
             $stmt->bindParam(':firstname', $this->firstname);
             $stmt->bindParam(':lastname', $this->lastname);
             $stmt->bindParam(':email', $this->email);
             $stmt->bindParam(':userStatus', $this->userStatus);
             $stmt->bindParam(':userRole', $this->userRole);
             $stmt->execute();
-            return json_encode(['success' => true, 'message' => 'Utilisateur actualisé !']);
+            return true;
 
         } catch (PDOException $e) {
-            return json_encode([
-                'success' => false,
-                'message' => 'Erreur dans la fonction updateUser du modèle',
-                'errors' => $e->getMessage(),]);
+            throw new Exception("Erreur dans findById : " . $e->getMessage());
         }
     }
 
@@ -156,12 +143,9 @@ class User {
             ");
             $stmt->bindParam(':id', $id);
             $stmt->execute();
-            return json_encode(['success' => true, 'message' => 'Utilisateur supprimé !']);
+            return true;
         } catch (PDOException $e) {
-            return json_encode([
-                'success' => false,
-                'message' => 'Erreur dans la fonction deleteUser du modèle',
-                'errors' => $e->getMessage(),]);
+            throw new Exception("Erreur dans deleteUser : " . $e->getMessage());
         }
     }
 
@@ -179,13 +163,9 @@ class User {
             $count = $stmt->fetchColumn();
             // return true si l'email existe déjà
             if($count > 0) {
-                return json_encode([
-                    'success' => true
-                ]);
+                return true;
             }
-            return json_encode([
-                'success' => false
-            ]);
+            return false;
 
         } catch (PDOException $e) {
             return json_encode([
@@ -198,68 +178,52 @@ class User {
 
 
     public function userStatusHandler($email, $status) {
-        $status === "connect" ? $updateStatus === "En ligne" : "Hors-ligne";
+        $status === "connect" ? $updateStatus = "En ligne" : "Hors-ligne";
         try {
-            $stmt = $this->db->prepare("
-            UPDATE user_table
-            SET user_status = :status 
-            WHERE user_email = :email
-            ");
+            $stmt = $this->db->prepare(
+                "UPDATE user_table
+                SET user_status = :status 
+                WHERE user_email = :email"
+            );
             $stmt->bindParam(':email', $email);
             $stmt->bindParam(':status', $updateStatus);
             $stmt->execute();
-
+            return true;
         } catch (PDOException $e) {
-            return json_encode([
-                'success' => false,
-                'message' => 'Erreur lors de connexion a la database',
-                'errors' => $e->getMessage()
-            ]);
+            throw new Exception("Erreur dans userStatusHandler : " . $e->getMessage());
         }
     }
     public function getAllUser() {
         // Requête pour récupérer tous les utilisateurs
         try {
-            $stmt = $this->db->prepare("
-                SELECT * FROM user_table
-            ");
+            $stmt = $this->db->prepare(
+                "SELECT user_id, user_firstname, user_lastname, user_email, user_creation_date, user_status, user_role 
+                FROM user_table"
+            );
             $stmt->execute();
             $allUsers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            return json_encode([
-                'success' => true, 
-                'message' => 'Utilisateurs récupérés !', $allUsers
-            ]);
+            return $allUsers;
 
         } catch (PDOException $e) {
-            return json_encode([
-                'success' => false,
-                'message' => 'Erreur dans la fonction getAllUser dans le modèle',
-                'errors' => $e->getMessage()
-            ]);
+            throw new Exception("Erreur dans getAllUser : " . $e->getMessage());
         }
     }
 
-    public function findById($id) {
+    public static function findByEmail($email) {
         // Requête pour trouver un utilisateur avec l'email
         try {
-            $stmt = $this->db->prepare("
-                SELECT * FROM user_table
-                WHERE id_user = :id
-            ");
-            $stmt->bindParam(':id', $id);
+            $stmt = Database::connectToDb()->prepare(
+                "SELECT id_user, user_firstname, user_lastname, user_email, user_creation_date, user_status, user_role
+                FROM user_table
+                WHERE user_email = :email LIMIT 1"
+            );
+            $stmt->bindParam(':email', $email);
             $stmt->execute();
             $foundedUser = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            return json_encode([
-                'success' => true, 
-                'message' => 'Utilisateur récupéré !', $foundedUser
-            ]);
+            return $foundedUser;
 
         } catch (PDOException $e) {
-            return json_encode([
-                'success' => false,
-                'message' => 'Erreur dans la fonction findById dans le modèle',
-                'errors' => $e->getMessage(),]);
+            throw new Exception("Erreur dans findByEmail : " . $e->getMessage());
         }
     }
 }
