@@ -29,6 +29,7 @@ class Message {
             throw new Exception("Erreur lors de l'envoi du message : " . $e->getMessage());
         }
     }
+
     public function sendMessageWithAttachment($messageData) {
         try {
             $stmt = $this->db->prepare(
@@ -53,4 +54,16 @@ class Message {
     public function sendAttachment($messageData) {
         // TODO: Envoi du fichier sans message
     }
+
+    public function getConversationMessages($conv_id, $user_id, $limit, $offset) {}
+
+    public function markAsRead($message_id, $user_id) {}
+
+    public function deleteMessage($message_id, $user_id) {}
+
+    public function editMessage($message_id, $content, $user_id) {}
+
+    public function getUnreadMessagesCount($user_id) {}
+    
+    public function getLastMessage($conv_id) {}
 }

@@ -65,4 +65,12 @@ class MessageService {
             throw new Exception("Erreur lors de l'envoi du message : " . $e->getMessage());
         }
     }
+
+    public function getConversationMessages($conv_id, $user_id) {}
+
+    public function markMessageAsRead($message_id, $user_id) {}
+
+    public function deleteMessage($message_id, $user_id) {}
+
+    public function getUnreadCount($user_id) {}
 }

@@ -61,6 +61,7 @@ class Conversation {
             throw new Exception("Erreur lors de la vérification des utilisateurs");
         }
     }
+
     public function createPrivateConversation($conversationData) {
         $this->setConversationData($conversationData);
         // Requête préparée qui créer une conversation en base de donnée
@@ -94,24 +95,15 @@ class Conversation {
         }
     }
 
-    public function getUserConversation($user_id, $conv_id) {
-        try {
-            $stmt = $this->db->prepare(
-                "SELECT uc.id_user, uc.conv_id
-                FROM user_conversation uc
-                WHERE uc.id_user = :user_id AND uc.conv_id = :conv_id"
-            );
-            $stmt->bindParam(':user_id', $user_id);
-            $stmt->bindParam(':conv_id', $conv_id);
-            $stmt->execute();
-            $count = $stmt->rowCount();
-            if ($count > 0) {
-                return true;
-            } else {
-                return false;
-            }
-        } catch (PDOException $e) {
-            throw new Exception("Erreur lors de la récupération des utilisateurs de la conversation");
-        }
-    }
+    public function findById($conv_id) {}
+
+    public function getUserConversations($user_id) {}
+
+    public function getConversationParticipants($conv_id) {}
+
+    public function deleteConversation($conv_id, $user_id) {}
+
+    public function updateConversationName($conv_id, $name) {}
+
+    public function addUserToConversation($conv_id, $user_id) {}
 }
