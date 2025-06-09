@@ -61,27 +61,14 @@ class User {
             $stmt->bindParam(':userStatus', $this->userStatus);
             $stmt->bindParam(':userRole', $this->userRole);
             if ($stmt->execute()) {
-                //Récupérer l'ID du dernier utilisateur inséré
-                $this->id = $this->db->lastInsertId();
-                return json_encode([
-                    'success' => true, 
-                    "message" => "Utilisateur crée avec succès"
-                ]);
+                return true;
             } else {
-                return json_encode([
-                    'success' => false,
-                    'message' => 'Erreur inatendue du serveur' ,
-                    "errors" => "Erreur dans le model User lors de l'execution de la requête"
-                ]);
+                throw new Exception("Erreur lors de l'inscription");
             }
             
         } catch (PDOException $e) {
-            return json_encode([
-                'success' => false,
-                'message' => 'Erreur inatendue de la base de donnée',
-                'errors' => $e->getMessage()
-            ]);
-        } // Échec de l'insertion
+            throw new Exception("Erreur lors de l'inscription : " . $e->getMessage());
+        }
     }
 
     public function userLogin($userData) {
@@ -237,6 +224,20 @@ class User {
 
         } catch (PDOException $e) {
             throw new Exception("Erreur dans findByEmail : " . $e->getMessage());
+        }
+    }
+    public function findById($id) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT id_user, user_firstname, user_lastname, user_email, user_creation_date, user_status, user_role 
+                FROM user_table WHERE id_user = :id LIMIT 1"
+            );
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $user;
+        } catch (PDOException $e) {
+            throw new Exception("Erreur dans findById : " . $e->getMessage());
         }
     }
 }

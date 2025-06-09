@@ -1,13 +1,16 @@
 <?php
-require_once "../services/Auth.service.php";
+require_once "../services/AuthServices/DataValidator.service.php";
+require_once "../services/AuthServices/Auth.service.php";
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
 
 class AuthController {
 
+    private $dataValidator;
     private $authService;
 
     public function __construct() {
+        $this->dataValidator = new DataValidatorService();
         $this->authService = new AuthService();
     }
 
@@ -24,7 +27,7 @@ class AuthController {
                     'userRole' => 'Associé'
                 ];
 
-                $result = $this->authService->register($formData);
+                $result = $this->dataValidator->cleaningData($formData, 'register');
                 
                 if ($result) {
                     echo json_encode([
@@ -51,7 +54,7 @@ class AuthController {
                     'password' => $_POST['password']
                 ];
     
-                $this->authService->authenticate($formData['email'], $formData['password']);
+                $this->dataValidator->cleaningData($formData, 'login');
 
                 echo json_encode([
                     'success' => true,

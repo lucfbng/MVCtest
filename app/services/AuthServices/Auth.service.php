@@ -1,12 +1,11 @@
 <?php
 require_once "../models/User.model.php";
-require_once "../services/Session.service.php";
-require_once "../services/DataValidator.service.php";
+require_once "../services/AuthServices/Session.service.php";
 
 class AuthService {
     private $userModel;
     private $sessionService;
-    private $signService;
+
     
     // Constantes pour les statuts utilisateur
     const STATUS_ONLINE = "En ligne";
@@ -19,26 +18,23 @@ class AuthService {
     public function __construct() {
         $this->userModel = new User();
         $this->sessionService = new SessionService();
-        $this->signService = new DataValidatorService();
     }
     
     // Fonction d'authentification
-    public function authenticate($email, $password) {
+    public function authenticate($userData) {
         try {
-            $userData = [
-                'email' => $email,
-                'password' => $password
-            ];
+            $checkEmail = $this->checkEmailExists($userData['email']);
+            if (!$checkEmail) {
+                throw new Exception("Email ou mot de passe incorrect");
+            }
+            $result = $this->userModel->userLogin($userData);
             
-            // Validation et nettoyage des données
-            $cleanData = $this->signService->cleaningData($userData, 'login');
-            
-            if ($cleanData) {
+            if ($result) {
                 // Démarrer la session utilisateur
                 $this->sessionService->startUserSession($userData);
                 
                 // Mettre à jour le statut en ligne
-                $this->updateUserStatus($email, self::STATUS_ONLINE);
+                $this->updateUserStatus($userData['email'], self::STATUS_ONLINE);
                 
                 return true;
             }
@@ -49,20 +45,27 @@ class AuthService {
     }
     
     // Fonction d'inscription
-    public function register($userData) {
+    public function register($cleanedData) {
+        $userData = [
+            'firstname' => $cleanedData['firstname'],
+            'lastname' => $cleanedData['lastname'],
+            'email' => $cleanedData['email'],
+            'passwordhash' => password_hash($cleanedData['password'], PASSWORD_DEFAULT),
+            'creationDate' => date('Y-m-d H:i:s'),
+            'userStatus' => self::STATUS_OFFLINE, 
+            'userRole' => self::ROLE_ASSOCIE      
+        ];
+        $checkEmail = $this->checkEmailExists($cleanedData['email']);
+        if ($checkEmail) {
+            throw new Exception("Cet email est déjà utilisé");
+        }
         try {
-            // Ajouter les valeurs par défaut
-            $userData['userStatus'] = self::STATUS_OFFLINE;
-            $userData['userRole'] = self::ROLE_ASSOCIE;
-            
-            // Validation et nettoyage des données
-            $result = $this->signService->cleaningData($userData, 'register');
-            
+            $result = $this->userModel->userRegister($userData);
             return $result;
-            
         } catch (Exception $e) {
             throw new Exception("Erreur lors de l'inscription : " . $e->getMessage());
         }
+            
     }
     
     // Fonction de déconnexion
@@ -93,6 +96,15 @@ class AuthService {
             throw new Exception("Erreur lors de la déconnexion : " . $e->getMessage());
         }
     }
+
+    public function checkEmailExists($email) {
+        try {
+            $result = $this->userModel->emailExists($email);
+            return $result;
+        } catch (Exception $e) {
+            throw new Exception("Erreur lors de la vérification de l'email : " . $e->getMessage());
+        }
+    }
     
     // Fonction de vérification d'authentification
     public function isAuthenticated() {
@@ -105,11 +117,11 @@ class AuthService {
 
             $user = $this->userModel->findByEmail($_SESSION['email']);
             
-            if (!$user) {
-                return false;
+            if (!$user || !$user['user_status'] === self::STATUS_ONLINE) {
+               return false;
             }
 
-            return $user['user_status'] === self::STATUS_ONLINE;
+            return true;
             
         } catch (Exception $e) {
             throw new Exception("Erreur d'authentification : " . $e->getMessage());
